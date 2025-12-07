@@ -5,7 +5,7 @@ plugins {
     id 'org.jetbrains.kotlin.plugin.serialization'
 }
 
-def apikeyPropertiesFile = rootProject.file("apikey.properties")
+def apikeyPropertiesFile = rootProject.file("app/apikey.properties")
 def apikeyProperties = new Properties()
 apikeyProperties.load(new FileInputStream(apikeyPropertiesFile))
 
