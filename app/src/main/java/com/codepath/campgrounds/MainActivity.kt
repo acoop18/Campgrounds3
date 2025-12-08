@@ -3,14 +3,16 @@ package com.codepath.campgrounds
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.DividerItemDecoration
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
 import com.codepath.asynchttpclient.AsyncHttpClient
 import com.codepath.asynchttpclient.callback.JsonHttpResponseHandler
 import com.codepath.campgrounds.databinding.ActivityMainBinding
-import com.codepath.campgrounds.BuildConfig
-import com.codepath.campgrounds.CampgroundResponse
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.flow.collect
+import kotlinx.coroutines.launch
 import kotlinx.serialization.decodeFromString
 import kotlinx.serialization.json.Json
 import okhttp3.Headers
@@ -50,6 +52,22 @@ class MainActivity : AppCompatActivity() {
             campgroundsRecyclerView.addItemDecoration(dividerItemDecoration)
         }
 
+        lifecycleScope.launch {
+            (application as CampgroundApplication).db.campgroundDao().getAll().collect { databaseList ->
+                val mappedList = databaseList.map { entity ->
+                    Campground(
+                        name = entity.name,
+                        description = entity.description,
+                        latLong = entity.latLong,
+                        images = listOf(CampgroundImage(entity.imageUrl, ""))
+                    )
+                }
+                campgrounds.clear()
+                campgrounds.addAll(mappedList)
+                campgroundAdapter.notifyDataSetChanged()
+            }
+        }
+
         val client = AsyncHttpClient()
         client.get(CAMPGROUNDS_URL, object : JsonHttpResponseHandler() {
             override fun onFailure(
@@ -68,9 +86,19 @@ class MainActivity : AppCompatActivity() {
                         json.jsonObject.toString()
                     )
                     campgroundResponse.data?.let { list ->
-                        val startPosition = campgrounds.size
-                        campgrounds.addAll(list)
-                        campgroundAdapter.notifyItemRangeInserted(startPosition, list.size)
+                        lifecycleScope.launch(Dispatchers.IO) {
+                            (application as CampgroundApplication).db.campgroundDao().deleteAll()
+                            (application as CampgroundApplication).db.campgroundDao().insertAll(
+                                list.map { campground ->
+                                    CampgroundEntity(
+                                        name = campground.name,
+                                        description = campground.description,
+                                        latLong = campground.latLong,
+                                        imageUrl = campground.imageUrl
+                                    )
+                                }
+                            )
+                        }
                     }
                 } catch (e: SerializationException) {
                     Log.e(TAG, "Failed to parse JSON: $e")
