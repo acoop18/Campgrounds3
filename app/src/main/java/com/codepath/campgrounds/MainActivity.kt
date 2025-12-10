@@ -3,37 +3,25 @@ package com.codepath.campgrounds
 import android.os.Bundle
 import android.util.Log
 import androidx.appcompat.app.AppCompatActivity
+import androidx.fragment.app.Fragment
 import androidx.lifecycle.lifecycleScope
-import androidx.recyclerview.widget.DividerItemDecoration
-import androidx.recyclerview.widget.LinearLayoutManager
-import androidx.recyclerview.widget.RecyclerView
 import com.codepath.asynchttpclient.AsyncHttpClient
 import com.codepath.asynchttpclient.callback.JsonHttpResponseHandler
 import com.codepath.campgrounds.databinding.ActivityMainBinding
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.flow.collect
 import kotlinx.coroutines.launch
-import kotlinx.serialization.decodeFromString
-import kotlinx.serialization.json.Json
-import okhttp3.Headers
 import kotlinx.serialization.SerializationException
+import kotlinx.serialization.decodeFromString
+import okhttp3.Headers
 
-fun createJson() = Json {
-    isLenient = true
-    ignoreUnknownKeys = true
-    useAlternativeNames = false
-}
-
-private const val TAG = "CampgroundsMain/"
-private const val PARKS_API_KEY = BuildConfig.API_KEY
+private const val TAG = "MainActivity"
+private const val API_KEY = BuildConfig.API_KEY
 private const val CAMPGROUNDS_URL =
-    "https://developer.nps.gov/api/v1/campgrounds?api_key=${PARKS_API_KEY}"
+    "https://developer.nps.gov/api/v1/campgrounds?api_key=${API_KEY}"
 
 class MainActivity : AppCompatActivity() {
-    private lateinit var campgroundsRecyclerView: RecyclerView
+
     private lateinit var binding: ActivityMainBinding
-    private val campgrounds = mutableListOf<Campground>()
-    private lateinit var campgroundAdapter: CampgroundAdapter
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -42,32 +30,22 @@ class MainActivity : AppCompatActivity() {
         val view = binding.root
         setContentView(view)
 
-        campgroundsRecyclerView = findViewById(R.id.campgrounds)
-
-        campgroundAdapter = CampgroundAdapter(this, campgrounds)
-        campgroundsRecyclerView.adapter = campgroundAdapter
-
-        campgroundsRecyclerView.layoutManager = LinearLayoutManager(this).also {
-            val dividerItemDecoration = DividerItemDecoration(this, it.orientation)
-            campgroundsRecyclerView.addItemDecoration(dividerItemDecoration)
-        }
-
-        lifecycleScope.launch {
-            (application as CampgroundApplication).db.campgroundDao().getAll().collect { databaseList ->
-                val mappedList = databaseList.map { entity ->
-                    Campground(
-                        name = entity.name,
-                        description = entity.description,
-                        latLong = entity.latLong,
-                        images = listOf(CampgroundImage(entity.imageUrl, ""))
-                    )
-                }
-                campgrounds.clear()
-                campgrounds.addAll(mappedList)
-                campgroundAdapter.notifyDataSetChanged()
+        binding.bottomNavigation.setOnItemSelectedListener { item ->
+            lateinit var fragment: Fragment
+            when (item.itemId) {
+                R.id.action_parks -> fragment = ParksFragment()
+                R.id.action_search -> fragment = CampgroundsFragment()
             }
+            replaceFragment(fragment)
+            true
         }
 
+        binding.bottomNavigation.selectedItemId = R.id.action_parks
+
+        fetchCampgrounds()
+    }
+
+    private fun fetchCampgrounds() {
         val client = AsyncHttpClient()
         client.get(CAMPGROUNDS_URL, object : JsonHttpResponseHandler() {
             override fun onFailure(
@@ -76,16 +54,16 @@ class MainActivity : AppCompatActivity() {
                 response: String?,
                 throwable: Throwable?
             ) {
-                Log.e(TAG, "Failed to fetch campgrounds: $statusCode")
+                Log.e(TAG, "Failed to fetch campgrounds. Status code: $statusCode, Response: $response", throwable)
             }
 
             override fun onSuccess(statusCode: Int, headers: Headers, json: JSON) {
                 Log.i(TAG, "Successfully fetched campgrounds: $json")
                 try {
-                    val campgroundResponse = createJson().decodeFromString<CampgroundResponse>(
+                    val parsedJson = createJson().decodeFromString<CampgroundResponse>(
                         json.jsonObject.toString()
                     )
-                    campgroundResponse.data?.let { list ->
+                    parsedJson.data?.let { list ->
                         lifecycleScope.launch(Dispatchers.IO) {
                             (application as CampgroundApplication).db.campgroundDao().deleteAll()
                             (application as CampgroundApplication).db.campgroundDao().insertAll(
@@ -101,10 +79,16 @@ class MainActivity : AppCompatActivity() {
                         }
                     }
                 } catch (e: SerializationException) {
-                    Log.e(TAG, "Failed to parse JSON: $e")
+                    Log.e(TAG, "Exception: $e")
                 }
             }
-
         })
+    }
+
+    private fun replaceFragment(fragment: Fragment) {
+        val fragmentManager = supportFragmentManager
+        val fragmentTransaction = fragmentManager.beginTransaction()
+        fragmentTransaction.replace(R.id.main_frame_layout, fragment)
+        fragmentTransaction.commit()
     }
 }

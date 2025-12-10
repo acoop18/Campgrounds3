@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<menu xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <item
+        android:id="@+id/action_parks"
+        android:enabled="true"
+        android:icon="@drawable/baseline_park_24"
+        android:title="Parks" />
+
+    <item
+        android:id="@+id/action_search"
+        android:enabled="true"
+        android:icon="@android:drawable/ic_menu_search"
+        android:title="Campground Search" />
+
+</menu>

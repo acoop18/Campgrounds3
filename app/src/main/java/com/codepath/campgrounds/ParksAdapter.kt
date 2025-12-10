@@ -9,33 +9,33 @@ import android.widget.TextView
 import androidx.recyclerview.widget.RecyclerView
 import com.bumptech.glide.Glide
 
-class CampgroundAdapter(private val context: Context, private val campgrounds: List<Campground>) :
-    RecyclerView.Adapter<CampgroundAdapter.ViewHolder>() {
+class ParksAdapter(private val context: Context, private val parks: List<Park>) :
+    RecyclerView.Adapter<ParksAdapter.ViewHolder>() {
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
-        val view = LayoutInflater.from(context).inflate(R.layout.item_campground, parent, false)
+        val view = LayoutInflater.from(context).inflate(R.layout.item_park, parent, false)
         return ViewHolder(view)
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        val campground = campgrounds[position]
-        holder.bind(campground)
+        val park = parks[position]
+        holder.bind(park)
     }
 
-    override fun getItemCount() = campgrounds.size
+    override fun getItemCount() = parks.size
 
     inner class ViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         private val nameTextView: TextView = itemView.findViewById(R.id.name)
         private val descriptionTextView: TextView = itemView.findViewById(R.id.description)
-        private val campgroundImageView: ImageView = itemView.findViewById(R.id.image)
+        private val parkImageView: ImageView = itemView.findViewById(R.id.image)
 
-        fun bind(campground: Campground) {
-            nameTextView.text = campground.name
-            descriptionTextView.text = campground.description
+        fun bind(park: Park) {
+            nameTextView.text = park.fullName
+            descriptionTextView.text = park.description
 
             Glide.with(context)
-                .load(campground.imageUrl)
-                .into(campgroundImageView)
+                .load(park.imageUrl)
+                .into(parkImageView)
         }
     }
 }

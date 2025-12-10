@@ -25,7 +25,7 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/image"
         app:layout_constraintTop_toTopOf="parent"
-        tools:text="Campground Name" />
+        tools:text="Park Name" />
 
     <TextView
         android:id="@+id/description"
@@ -39,6 +39,6 @@
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toEndOf="@+id/image"
         app:layout_constraintTop_toBottomOf="@+id/name"
-        tools:text="This is a sample description of a campground." />
+        tools:text="This is a sample description of a park." />
 
 </androidx.constraintlayout.widget.ConstraintLayout>
